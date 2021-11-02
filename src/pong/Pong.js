@@ -36,11 +36,11 @@ function startup() {
     initGL();
     window.addEventListener('keyup', onKeyup, false);
     window.addEventListener('keydown', onKeydown, false);
-    //draw();
-    var loop1 = [0.1, 0.1, 0.9, 0.9, 0.1, 0.9];
-    var loop2 = [0.2, 0.2, 0.8, 0.8, 0.2, 0.8];
-    drawPoints(loop1, gl.LINE_LOOP);
-    drawPoints(loop2, gl.LINE_LOOP);
+    draw();
+    //var loop1 = [0.1, 0.1, 0.9, 0.9, 0.1, 0.9];
+    //var loop2 = [0.2, 0.2, 0.8, 0.8, 0.2, 0.8];
+    //drawPoints(loop1, gl.LINE_LOOP);
+    //drawPoints(loop2, gl.LINE_LOOP);
 }
 
 /**
@@ -76,14 +76,15 @@ function setUpBuffers(){
     gl.vertexAttribPointer(ctx.aVertexPositionId, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(ctx.aVertexPositionId);
 
-    // rectangleObject.buffer = gl.createBuffer();
-    // var vertices = [
-    //     -0.5, -0.5,
-    //     0.5, -0.5,
-    //     0.5, 0.5,
-    //     -0.5, 0.5];
-    // gl.bindBuffer(gl.ARRAY_BUFFER, rectangleObject.buffer);
-    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    rectangleObject.buffer = gl.createBuffer();
+    var vertices = [
+        -0.5, -0.5,
+        0.5, -0.5,
+        -0.5, 0.5,
+        0.5, 0.5];
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, rectangleObject.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 }
 
 function drawPoints(pointCoordinates, mode) {
@@ -110,7 +111,7 @@ function draw() {
     gl.enableVertexAttribArray(ctx.aVertexPositionId);
 
     gl.uniform4f(ctx.uColorId, 1, 1, 1, 1);
-    gl.drawArrays(gl.LINE_LOOP, 0, 4);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
 // Key Handling
