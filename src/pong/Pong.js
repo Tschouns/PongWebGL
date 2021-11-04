@@ -38,8 +38,9 @@ var pongWorld = {
     paddleRight: null,
     ball: null,
 
-    // time
+    // game state
     worldTime: -1,
+    isFinished: false,
 }
 
 /**
@@ -160,6 +161,10 @@ function onKeyup(event) {
 function updatePongWorld(timeStamp) {
     "use strict";
 
+    if (pongWorld.isFinished) {
+        return;
+    }
+
     // Calculate time passed, handle timestamp.
     if (pongWorld.worldTime < 0) {
         pongWorld.worldTime = timeStamp;
@@ -168,8 +173,6 @@ function updatePongWorld(timeStamp) {
 
     var timePassed = (timeStamp - pongWorld.worldTime) / 1000;
     pongWorld.worldTime = timeStamp;
-
-    console.log("time passed: " + timePassed);
 
     // Move the paddles.
     if (isDown(key.UP)) {
@@ -193,6 +196,18 @@ function updatePongWorld(timeStamp) {
     vec2.add(pongWorld.ball.position, pongWorld.ball.position, ballPositionOffset);
 
     solveBallCollisions();
+
+    // Has left player won?:
+    if (pongWorld.ball.position[0] > pongWorld.size[0]) {
+        pongWorld.isFinished = true;
+        pongWorld.paddleLeft.color = vec4.fromValues(0.9, 0.9, 0.1, 1);
+    }
+
+    // Has right player won?:
+    if (pongWorld.ball.position[0] < 0) {
+        pongWorld.isFinished = true;
+        pongWorld.paddleRight.color = vec4.fromValues(0.9, 0.9, 0.1, 1);
+    }
 }
 
 /**
@@ -225,16 +240,6 @@ function solveBallCollisions() {
 
     var pos = pongWorld.ball.position;
     var v = pongWorld.ball.velocity;
-
-    // left world bound:
-    if (pos[0] < r && v[0] < 0) {
-        v[0] = 0 - v[0];
-    }
-
-    // right world bound:
-    if (pos[0] > (pongWorld.size[0] - r) && v[0] > 0) {
-        v[0] = 0 - v[0];
-    }
 
     // upper world bound:
     if (pos[1] > (pongWorld.size[1] - r) && v[1] > 0) {
