@@ -4,15 +4,13 @@
 // WebGL Exercises
 //
 
-//import {create, fromRotation, fromScaling, fromTranslation, multiply, rotate, vec2} from "./gl-matrix";
-
-// Register function to call after document has loaded
+// Register function to call after document has loaded.
 window.onload = startup;
 
-// the gl object is saved globally
+// The gl object is saved globally.
 var gl;
 
-// we keep all local parameters for the program in a single object
+// We keep all local parameters for the program in a single object.
 var ctx = {
     shaderProgram: -1,
 
@@ -22,10 +20,18 @@ var ctx = {
     uColorId: -1,
 };
 
-// we keep all the parameters for drawing a specific object together
+// We keep all the parameters for drawing a specific object together.
 var rectangleObject = {
     buffer: -1,
 };
+
+// We keep the state of the "game world" in a single structure.
+var pongWorld = {
+    middleLine: null,
+    paddleLeft: null,
+    paddleRight: null,
+    ball: null,
+}
 
 /**
  * Startup function to be called when the body is loaded
@@ -38,27 +44,7 @@ function startup() {
     window.addEventListener('keyup', onKeyup, false);
     window.addEventListener('keydown', onKeydown, false);
 
-    // demo:
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    var scale = mat3.fromScaling(mat3.create(), vec2.fromValues(40, 100));
-    var rotation = mat3.fromRotation(mat3.create(), -0.1);
-    var translation1 = mat3.fromTranslation(mat3.create(), vec2.fromValues(200, 300));
-    var translation2 = mat3.fromTranslation(mat3.create(), vec2.fromValues(600, 300));
-
-    var transform1 = mat3.create();
-    mat3.multiply(transform1, scale, transform1);
-    mat3.multiply(transform1, rotation, transform1);
-    mat3.multiply(transform1, translation1, transform1);
-
-    drawRectangle(transform1, vec4.fromValues(1,1,1,1));
-
-    var transform2 = mat3.create();
-    mat3.multiply(transform2, scale, transform2);
-    mat3.multiply(transform2, rotation, transform2);
-    mat3.multiply(transform2, translation2, transform2);
-
-    drawRectangle(transform2, vec4.fromValues(0,1,0,1));
+    drawPongWorld();
 }
 
 /**
@@ -101,10 +87,10 @@ function setUpBuffers(){
 
 /**
  * Draws the scene.
- * @param {mat3} transformationMatrix a transformation matrix which is applied to the rectangle
+ * @param {mat3} prjectionMatrix a projection matrix which is applied to the rectangle
  * @param {vec4} colorRgb the RGB color the rectangle is drawn with
  */
-function drawRectangle(transformationMatrix, colorRgb) {
+function drawRectangle(prjectionMatrix, colorRgb) {
     "use strict";
     console.log("Drawing");
     //gl.clear(gl.COLOR_BUFFER_BIT);
@@ -115,7 +101,7 @@ function drawRectangle(transformationMatrix, colorRgb) {
 
     // Set shader parameters.
     gl.uniform2f(ctx.uScreenResolutionId, 800, 600);
-    gl.uniformMatrix3fv(ctx.uProjectionMatrixId, false, transformationMatrix);
+    gl.uniformMatrix3fv(ctx.uProjectionMatrixId, false, prjectionMatrix);
     gl.uniform4f(ctx.uColorId, colorRgb[0], colorRgb[1], colorRgb[2], colorRgb[3]);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -141,4 +127,64 @@ function onKeydown(event) {
 
 function onKeyup(event) {
     delete key._pressed[event.keyCode];
+}
+
+/**
+ * Updates the entire "Pong World".
+ */
+function updatePongWorld() {
+
+}
+
+/**
+ * Draws the entire "Pong World".
+ */
+function drawPongWorld() {
+    // demo:
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    var scale = mat3.fromScaling(mat3.create(), vec2.fromValues(40, 100));
+    var rotation = mat3.fromRotation(mat3.create(), -0.1);
+    var translation1 = mat3.fromTranslation(mat3.create(), vec2.fromValues(200, 300));
+    var translation2 = mat3.fromTranslation(mat3.create(), vec2.fromValues(600, 300));
+
+    var transform1 = mat3.create();
+    mat3.multiply(transform1, scale, transform1);
+    mat3.multiply(transform1, rotation, transform1);
+    mat3.multiply(transform1, translation1, transform1);
+
+    drawRectangle(transform1, vec4.fromValues(1,1,1,1));
+
+    var transform2 = mat3.create();
+    mat3.multiply(transform2, scale, transform2);
+    mat3.multiply(transform2, rotation, transform2);
+    mat3.multiply(transform2, translation2, transform2);
+
+    drawRectangle(transform2, vec4.fromValues(0,1,0,1));
+}
+
+/**
+ * Initializes the "Pong World".
+ */
+function initializePongWorld() {
+    pongWorld.middleLine = {
+        modelMatrix: createGameModelMatrix(vec2.fromValues(2, 560)),
+        position: vec2.create(400, 300),
+        color: vec4.create(0.8, 0.8, 0.8, 0.5),
+    };
+}
+
+/**
+ * Creates a model matrix for a specific game model. The model matrix describes the object in its shape, and does not
+ * change during the game.
+ * @param {vec2} the model size
+ * @returns {mat3} the model matrix
+ */
+function createGameModelMatrix(size) {
+    var scaleToSize = mat3.fromScaling(mat3.create(), size);
+
+    var modelMatrix = mat3.create();
+    mat3.multiply(modelMatrix, scaleToSize, modelMatrix);
+
+    return modelMatrix;
 }
