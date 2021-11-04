@@ -56,7 +56,7 @@ function startup() {
     window.addEventListener('keydown', onKeydown, false);
 
     initializePongWorld();
-    window.requestAnimationFrame(drawAnimated);
+    window.requestAnimationFrame(renderAnimated);
 }
 
 /**
@@ -98,10 +98,10 @@ function setUpBuffers(){
 }
 
 /**
- * Calculates a step in the game, and draws the animated frame.
+ * Calculates a step in the game, and renders the animated frame.
  * @param timeStamp
  */
-function drawAnimated (timeStamp) {
+function renderAnimated (timeStamp) {
     "use strict";
     console.log("Rendering animated frame...");
 
@@ -109,9 +109,45 @@ function drawAnimated (timeStamp) {
     drawPongWorld();
 
     // Request the next frame.
-    window.requestAnimationFrame(drawAnimated);
+    window.requestAnimationFrame(renderAnimated);
 }
 
+/*
+    Drawing:
+ */
+
+/**
+ * Draws the entire "Pong World".
+ */
+function drawPongWorld() {
+    "use strict";
+
+    // Clear screen.
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Draw the game models.
+    drawGameModel(pongWorld.middleLine);
+    drawGameModel(pongWorld.paddleLeft);
+    drawGameModel(pongWorld.paddleRight);
+    drawGameModel(pongWorld.ball);
+}
+
+/**
+ * Draws a sinlge drawable game model to the screen.
+ * @param model the model to draw
+ */
+function drawGameModel(model) {
+    "use strict";
+
+    var scaleToSize = mat3.fromScaling(mat3.create(), model.size);
+    var moveToPosition = mat3.fromTranslation(mat3.create(), model.position);
+
+    var modelMatrix = mat3.create();
+    mat3.multiply(modelMatrix, scaleToSize, modelMatrix);
+    mat3.multiply(modelMatrix, moveToPosition, modelMatrix);
+
+    drawRectangle(modelMatrix, model.color);
+}
 
 /**
  * Draws the scene.
@@ -134,7 +170,10 @@ function drawRectangle(prjectionMatrix, colorRgb) {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
-// Key Handling
+/*
+    Key Handling:
+ */
+
 var key = {
     _pressed: {},
 
@@ -154,6 +193,56 @@ function onKeydown(event) {
 
 function onKeyup(event) {
     delete key._pressed[event.keyCode];
+}
+
+/*
+    Pong Game Logic:
+ */
+
+/**
+ * Initializes the "Pong World".
+ */
+function initializePongWorld() {
+    "use strict";
+
+    pongWorld.middleLine = createGameModel(
+        vec2.fromValues(2, 560),
+        vec4.fromValues(1, 1, 1, 0.9), // light gray
+        vec2.fromValues(400, 300));
+
+    pongWorld.paddleLeft = createGameModel(
+        vec2.fromValues(10, 100),
+        vec4.fromValues(0.4, 0.5, 0.7, 1), // blue
+        vec2.fromValues(100, 300));
+
+    pongWorld.paddleRight = createGameModel(
+        vec2.fromValues(10, 100),
+        vec4.fromValues(0.4, 0.5, 0.7, 1), // blue
+        vec2.fromValues(700, 300));
+
+    pongWorld.ball = createGameModel(
+        vec2.fromValues(20, 20),
+        vec4.fromValues(1, 0.5, 0.5, 1), // red
+        vec2.fromValues(400, 300));
+
+    // Set a (more or less) random initial ball velocity, scale to "ball speed".
+    var ballVelocity = vec2.fromValues(
+        -1 + (Math.random() - 0.5),
+        Math.random() - 0.5);
+
+    vec2.normalize(ballVelocity, ballVelocity);
+    vec2.scale(ballVelocity, ballVelocity, pongWorld.ballSpeed);
+
+    pongWorld.ball.velocity = ballVelocity;
+
+    // game state:
+    pongWorld.worldTime = -1;
+    pongWorld.isFinished = false;
+
+    pongWorld.enemyAI = {
+        coolDownTime: 0,
+        movingDirection: 0,
+    };
 }
 
 /**
@@ -186,16 +275,6 @@ function updatePongWorld(timeStamp) {
 
     updateEnemyAI(timePassed);
     movePaddle(pongWorld.paddleRight,pongWorld.enemyAI.movingDirection * pongWorld.paddleSpeed * timePassed)
-
-    /*
-    if (isDown(key.RIGHT)) {
-        movePaddle(pongWorld.paddleRight, pongWorld.paddleSpeed * timePassed);
-    }
-
-    if (isDown(key.LEFT)) {
-        movePaddle(pongWorld.paddleRight, 0 - pongWorld.paddleSpeed * timePassed);
-    }
-    */
 
     // Move the ball.
     var ballPositionOffset = vec2.scale(vec2.create(), pongWorld.ball.velocity, timePassed);
@@ -313,22 +392,6 @@ function solveBallCollisions() {
 }
 
 /**
- * Random rotates the specified vector 2 by a maximum of the specified max absolute radians.
- * @param vector2 the vector to rotate
- * @param maxAbsRad the maximum absolute radians by which to rotate
- */
-function randomRotateVector(vector2, maxAbsRad) {
-    var rad = ((Math.random() - 0.5) * 4 * Math.PI) % maxAbsRad;
-    var rotate =  mat2.fromRotation(mat2.create(), rad);
-    var rotatedV = mat2.multiply(mat2.create(), rotate, mat2.fromValues(vector2[0], vector2[1], 0, 0));
-
-    if (Math.abs(rotatedV[0] / rotatedV[1]) > 1.5) {
-        vector2[0] = rotatedV[0];
-        vector2[1] = rotatedV[1];
-    }
-}
-
-/**
  * Determines whether two specified models, A and B, are currently colliding.
  * @param a model A
  * @param b model B
@@ -356,86 +419,9 @@ function doModelsCollide(a, b) {
     }
 }
 
-/**
- * Draws the entire "Pong World".
+/*
+    Helpers:
  */
-function drawPongWorld() {
-    "use strict";
-
-    // Clear screen.
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    // Draw the game models.
-    drawGameModel(pongWorld.middleLine);
-    drawGameModel(pongWorld.paddleLeft);
-    drawGameModel(pongWorld.paddleRight);
-    drawGameModel(pongWorld.ball);
-}
-
-/**
- * Draws a sinlge drawable game model to the screen.
- * @param model the model to draw
- */
-function drawGameModel(model) {
-    "use strict";
-    console.log("Drawing model...");
-    console.log(model.position);
-
-    var scaleToSize = mat3.fromScaling(mat3.create(), model.size);
-    var moveToPosition = mat3.fromTranslation(mat3.create(), model.position);
-
-    var modelMatrix = mat3.create();
-    mat3.multiply(modelMatrix, scaleToSize, modelMatrix);
-    mat3.multiply(modelMatrix, moveToPosition, modelMatrix);
-
-    drawRectangle(modelMatrix, model.color);
-}
-
-/**
- * Initializes the "Pong World".
- */
-function initializePongWorld() {
-    "use strict";
-
-    pongWorld.middleLine = createGameModel(
-        vec2.fromValues(2, 560),
-        vec4.fromValues(1, 1, 1, 0.9), // light gray
-        vec2.fromValues(400, 300));
-
-    pongWorld.paddleLeft = createGameModel(
-        vec2.fromValues(10, 100),
-        vec4.fromValues(0.4, 0.5, 0.7, 1), // blue
-        vec2.fromValues(100, 300));
-
-    pongWorld.paddleRight = createGameModel(
-        vec2.fromValues(10, 100),
-        vec4.fromValues(0.4, 0.5, 0.7, 1), // blue
-        vec2.fromValues(700, 300));
-
-    pongWorld.ball = createGameModel(
-        vec2.fromValues(20, 20),
-        vec4.fromValues(1, 0.5, 0.5, 1), // red
-        vec2.fromValues(400, 300));
-
-    // Set a (more or less) random initial ball velocity, scale to "ball speed".
-    var ballVelocity = vec2.fromValues(
-        -1 + (Math.random() - 0.5),
-        Math.random() - 0.5);
-
-    vec2.normalize(ballVelocity, ballVelocity);
-    vec2.scale(ballVelocity, ballVelocity, pongWorld.ballSpeed);
-
-    pongWorld.ball.velocity = ballVelocity;
-
-    // game state:
-    pongWorld.worldTime = -1;
-    pongWorld.isFinished = false;
-
-    pongWorld.enemyAI = {
-        coolDownTime: 0,
-        movingDirection: 0,
-    };
-}
 
 /**
  * Initializes a drawable "game model" which has a shape (model matrix), a color, and a position (which might change during the game).
@@ -454,4 +440,20 @@ function createGameModel(size, color, startingPosition) {
     }
 
     return model;
+}
+
+/**
+ * Random rotates the specified vector 2 by a maximum of the specified max absolute radians.
+ * @param vector2 the vector to rotate
+ * @param maxAbsRad the maximum absolute radians by which to rotate
+ */
+function randomRotateVector(vector2, maxAbsRad) {
+    var rad = ((Math.random() - 0.5) * 4 * Math.PI) % maxAbsRad;
+    var rotate =  mat2.fromRotation(mat2.create(), rad);
+    var rotatedV = mat2.multiply(mat2.create(), rotate, mat2.fromValues(vector2[0], vector2[1], 0, 0));
+
+    if (Math.abs(rotatedV[0] / rotatedV[1]) > 1.5) {
+        vector2[0] = rotatedV[0];
+        vector2[1] = rotatedV[1];
+    }
 }
