@@ -37,7 +37,28 @@ function startup() {
     initGL();
     window.addEventListener('keyup', onKeyup, false);
     window.addEventListener('keydown', onKeydown, false);
-    drawRectangle();
+
+    // demo:
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    var scale = mat3.fromScaling(mat3.create(), vec2.fromValues(40, 100));
+    var rotation = mat3.fromRotation(mat3.create(), -0.1);
+    var translation1 = mat3.fromTranslation(mat3.create(), vec2.fromValues(200, 300));
+    var translation2 = mat3.fromTranslation(mat3.create(), vec2.fromValues(600, 300));
+
+    var transform1 = mat3.create();
+    mat3.multiply(transform1, scale, transform1);
+    mat3.multiply(transform1, rotation, transform1);
+    mat3.multiply(transform1, translation1, transform1);
+
+    drawRectangle(transform1, vec4.fromValues(1,1,1,1));
+
+    var transform2 = mat3.create();
+    mat3.multiply(transform2, scale, transform2);
+    mat3.multiply(transform2, rotation, transform2);
+    mat3.multiply(transform2, translation2, transform2);
+
+    drawRectangle(transform2, vec4.fromValues(0,1,0,1));
 }
 
 /**
@@ -80,32 +101,22 @@ function setUpBuffers(){
 
 /**
  * Draws the scene.
+ * @param {mat3} transformationMatrix a transformation matrix which is applied to the rectangle
+ * @param {vec4} colorRgb the RGB color the rectangle is drawn with
  */
-function drawRectangle() {
+function drawRectangle(transformationMatrix, colorRgb) {
     "use strict";
     console.log("Drawing");
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    //gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, rectangleObject.buffer);
     gl.vertexAttribPointer(ctx.aVertexPositionId, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(ctx.aVertexPositionId);
 
-    // temp:
-    var scale = mat3.fromScaling(mat3.create(), vec2.fromValues(40, 100));
-    var rotation = mat3.fromRotation(mat3.create(), -0.1);
-    var translation = mat3.fromTranslation(mat3.create(), vec2.fromValues(200, 300))
-
-    var projectionMatrix = mat3.create();
-
-    mat3.multiply(projectionMatrix, scale, projectionMatrix);
-    mat3.multiply(projectionMatrix, translation, projectionMatrix);
-    mat3.multiply(projectionMatrix, rotation, projectionMatrix);
-
     // Set shader parameters.
     gl.uniform2f(ctx.uScreenResolutionId, 800, 600);
-    gl.uniformMatrix3fv(ctx.uProjectionMatrixId, false, projectionMatrix);
-
-    gl.uniform4f(ctx.uColorId, 1, 1, 1, 1);
+    gl.uniformMatrix3fv(ctx.uProjectionMatrixId, false, transformationMatrix);
+    gl.uniform4f(ctx.uColorId, colorRgb[0], colorRgb[1], colorRgb[2], colorRgb[3]);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
