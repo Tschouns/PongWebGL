@@ -29,8 +29,8 @@ var rectangleObject = {
 var pongWorld = {
     // fixed properties
     size: vec2.fromValues(800, 600),
-    paddleSpeed: 200,
-    ballSpeed: 200,
+    paddleSpeed: 250,
+    ballSpeed: 300,
 
     // models
     middleLine: null,
@@ -316,26 +316,30 @@ function updateEnemyAI(timePassed) {
     // Is the ball approaching the enemy?
     if (ball.velocity[0] > 0) {
         // Follow the ball.
-        if (ball.position[1] > (paddle.position[1] + paddle.size[1] / 2)) {
+        var tolerance = paddle.size[1] * 0.3;
+
+        if (ball.position[1] > (paddle.position[1] + tolerance)) {
             pongWorld.enemyAI.movingDirection = 1;
         }
 
-        if (ball.position[1] < (paddle.position[1] - paddle.size[1] / 2)) {
+        if (ball.position[1] < (paddle.position[1] - tolerance)) {
             pongWorld.enemyAI.movingDirection = -1;
         }
     }
     else {
         // Follow the player.
-        if (playerPaddle.position[1] > paddle.position[1] + paddle.size[1]) {
+        var tolerance = paddle.size[1] * 1.5;
+
+        if (playerPaddle.position[1] > paddle.position[1] + tolerance) {
             pongWorld.enemyAI.movingDirection = 1;
         }
 
-        if (playerPaddle.position[1] < paddle.position[1] - paddle.size[1]) {
+        if (playerPaddle.position[1] < paddle.position[1] - tolerance) {
             pongWorld.enemyAI.movingDirection = -1;
         }
     }
 
-    pongWorld.enemyAI.coolDownTime = Math.random() * 1.1 + 0.2;
+    pongWorld.enemyAI.coolDownTime = Math.random() * 0.9 + 0.1;
 }
 
 /**
@@ -443,17 +447,17 @@ function createGameModel(size, color, startingPosition) {
 }
 
 /**
- * Random rotates the specified vector 2 by a maximum of the specified max absolute radians.
- * @param vector2 the vector to rotate
- * @param maxAbsRad the maximum absolute radians by which to rotate
+ * Random rotates the specified velocity vector by a maximum of the specified max absolute radians.
+ * @param {vec2} v the vector to rotate
+ * @param {number} maxAbsRad the maximum absolute radians by which to rotate
  */
-function randomRotateVector(vector2, maxAbsRad) {
+function randomRotateVector(v, maxAbsRad) {
     var rad = ((Math.random() - 0.5) * 4 * Math.PI) % maxAbsRad;
     var rotate =  mat2.fromRotation(mat2.create(), rad);
-    var rotatedV = mat2.multiply(mat2.create(), rotate, mat2.fromValues(vector2[0], vector2[1], 0, 0));
+    var rotatedV = mat2.multiply(mat2.create(), rotate, mat2.fromValues(v[0], v[1], 0, 0));
 
     if (Math.abs(rotatedV[0] / rotatedV[1]) > 1.5) {
-        vector2[0] = rotatedV[0];
-        vector2[1] = rotatedV[1];
+        v[0] = rotatedV[0];
+        v[1] = rotatedV[1];
     }
 }
