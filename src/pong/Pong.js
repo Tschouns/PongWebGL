@@ -44,6 +44,7 @@ function startup() {
     window.addEventListener('keyup', onKeyup, false);
     window.addEventListener('keydown', onKeydown, false);
 
+    initializePongWorld();
     drawPongWorld();
 }
 
@@ -140,9 +141,24 @@ function updatePongWorld() {
  * Draws the entire "Pong World".
  */
 function drawPongWorld() {
-    // demo:
+    // Clear screen.
     gl.clear(gl.COLOR_BUFFER_BIT);
 
+    // Draw middle line.
+    // var middleLineTransform = mat3.copy(mat3.create(), pongWorld.middleLine.modelMatrix);
+    // mat3.translate(middleLineTransform, middleLineTransform, pongWorld.middleLine.position);
+
+    var middleLineMatrix = mat3.copy(mat3.create(), pongWorld.middleLine.modelMatrix);
+    var moveToPosition = mat3.fromTranslation(mat3.create(), pongWorld.middleLine.position);
+
+    mat3.multiply(middleLineMatrix, moveToPosition, middleLineMatrix);
+
+    //mat3.multiply(middleLineTransform, pongWorld.middleLine.modelMatrix, middleLineTransform);
+    //mat3.multiply(middleLineTransform)
+
+    drawRectangle(middleLineMatrix, pongWorld.middleLine.color);
+
+    // Demo 1.
     var scale = mat3.fromScaling(mat3.create(), vec2.fromValues(40, 100));
     var rotation = mat3.fromRotation(mat3.create(), -0.1);
     var translation1 = mat3.fromTranslation(mat3.create(), vec2.fromValues(200, 300));
@@ -155,6 +171,7 @@ function drawPongWorld() {
 
     drawRectangle(transform1, vec4.fromValues(1,1,1,1));
 
+    // Demo 2.
     var transform2 = mat3.create();
     mat3.multiply(transform2, scale, transform2);
     mat3.multiply(transform2, rotation, transform2);
@@ -169,8 +186,8 @@ function drawPongWorld() {
 function initializePongWorld() {
     pongWorld.middleLine = {
         modelMatrix: createGameModelMatrix(vec2.fromValues(2, 560)),
-        position: vec2.create(400, 300),
-        color: vec4.create(0.8, 0.8, 0.8, 0.5),
+        position: vec2.fromValues(400, 300),
+        color: vec4.fromValues(1, 1, 1, 1),
     };
 }
 
@@ -183,8 +200,5 @@ function initializePongWorld() {
 function createGameModelMatrix(size) {
     var scaleToSize = mat3.fromScaling(mat3.create(), size);
 
-    var modelMatrix = mat3.create();
-    mat3.multiply(modelMatrix, scaleToSize, modelMatrix);
-
-    return modelMatrix;
+    return scaleToSize;
 }
