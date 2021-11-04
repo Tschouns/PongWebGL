@@ -29,7 +29,7 @@ var rectangleObject = {
 var pongWorld = {
     // fixed properties
     size: vec2.fromValues(800, 600),
-    paddleSpeed: 70,
+    paddleSpeed: 200,
     ballSpeed: 200,
 
     // models
@@ -171,11 +171,48 @@ function updatePongWorld(timeStamp) {
 
     console.log("time passed: " + timePassed);
 
-    // Move stuff.
+    // Move the paddles.
+    if (isDown(key.UP)) {
+        movePaddle(pongWorld.paddleLeft, pongWorld.paddleSpeed * timePassed);
+    }
+
+    if (isDown(key.DOWN)) {
+        movePaddle(pongWorld.paddleLeft, 0 - pongWorld.paddleSpeed * timePassed);
+    }
+
+    if (isDown(key.RIGHT)) {
+        movePaddle(pongWorld.paddleRight, pongWorld.paddleSpeed * timePassed);
+    }
+
+    if (isDown(key.LEFT)) {
+        movePaddle(pongWorld.paddleRight, 0 - pongWorld.paddleSpeed * timePassed);
+    }
+
+    // Move the ball.
     var ballPositionOffset = vec2.scale(vec2.create(), pongWorld.ball.velocity, timePassed);
     vec2.add(pongWorld.ball.position, pongWorld.ball.position, ballPositionOffset);
 
     solveBallCollisions();
+}
+
+/**
+ * Moves the specified paddle by the specified y-offset, and within the world bounds.
+ * @param paddle the paddle to move
+ * @param yOffset the y-offset by which to move the paddle
+ */
+function movePaddle(paddle, yOffset) {
+    var min = paddle.size[1] / 2;
+    var max = pongWorld.size[1] - (paddle.size[1] / 2);
+
+    paddle.position[1] += yOffset;
+
+    if (paddle.position[1] < min) {
+        paddle.position[1] = min;
+    }
+
+    if (paddle.position[1] > max) {
+        paddle.position[1] = max;
+    }
 }
 
 /**
@@ -192,21 +229,25 @@ function solveBallCollisions() {
     // left bound:
     if (pos[0] < r && v[0] < 0) {
         v[0] = 0 - v[0];
+        return;
     }
 
     // right bound:
     if (pos[0] > (pongWorld.size[0] - r) && v[0] > 0) {
         v[0] = 0 - v[0];
+        return;
     }
 
     // upper bound:
     if (pos[1] > (pongWorld.size[1] - r) && v[1] > 0) {
         v[1] = 0 - v[1];
+        return;
     }
 
     // lower bound:
     if (pos[1] < r && v[1] < 0) {
         v[1] = 0 - v[1];
+        return;
     }
 }
 
