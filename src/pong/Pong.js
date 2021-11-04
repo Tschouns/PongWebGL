@@ -30,7 +30,7 @@ var pongWorld = {
     // fixed properties
     size: vec2.fromValues(800, 600),
     paddleSpeed: 70,
-    ballSpeed: 100,
+    ballSpeed: 200,
 
     // models
     middleLine: null,
@@ -174,13 +174,40 @@ function updatePongWorld(timeStamp) {
     // Move stuff.
     var ballPositionOffset = vec2.scale(vec2.create(), pongWorld.ball.velocity, timePassed);
     vec2.add(pongWorld.ball.position, pongWorld.ball.position, ballPositionOffset);
+
+    solveBallCollisions();
 }
 
 /**
  * Solves all the possible collisions of the ball with all other stuff.
  */
 function solveBallCollisions() {
+    "use strict";
 
+    var r = pongWorld.ball.size[0] / 2;
+
+    var pos = pongWorld.ball.position;
+    var v = pongWorld.ball.velocity;
+
+    // left bound:
+    if (pos[0] < r && v[0] < 0) {
+        v[0] = 0 - v[0];
+    }
+
+    // right bound:
+    if (pos[0] > (pongWorld.size[0] - r) && v[0] > 0) {
+        v[0] = 0 - v[0];
+    }
+
+    // upper bound:
+    if (pos[1] > (pongWorld.size[1] - r) && v[1] > 0) {
+        v[1] = 0 - v[1];
+    }
+
+    // lower bound:
+    if (pos[1] < r && v[1] < 0) {
+        v[1] = 0 - v[1];
+    }
 }
 
 /**
@@ -208,9 +235,11 @@ function drawGameModel(model) {
     console.log("Drawing model...");
     console.log(model.position);
 
-    var modelMatrix = mat3.copy(mat3.create(), model.modelMatrix);
-
+    var scaleToSize = mat3.fromScaling(mat3.create(), model.size);
     var moveToPosition = mat3.fromTranslation(mat3.create(), model.position);
+
+    var modelMatrix = mat3.create();
+    mat3.multiply(modelMatrix, scaleToSize, modelMatrix);
     mat3.multiply(modelMatrix, moveToPosition, modelMatrix);
 
     drawRectangle(modelMatrix, model.color);
@@ -243,7 +272,7 @@ function initializePongWorld() {
         vec2.fromValues(400, 300));
 
     // Set an initial ball velocity, scale to "ball speed".
-    var ballVelocity = vec2.fromValues(20, 12);
+    var ballVelocity = vec2.fromValues(-20, 12);
     vec2.normalize(ballVelocity, ballVelocity);
     vec2.scale(ballVelocity, ballVelocity, pongWorld.ballSpeed);
 
@@ -260,9 +289,8 @@ function initializePongWorld() {
 function createGameModel(size, color, startingPosition) {
     "use strict";
 
-    var scaleToSize = mat3.fromScaling(mat3.create(), size);
     var model = {
-        modelMatrix: scaleToSize,
+        size: size,
         color: color,
         position: startingPosition,
     }
