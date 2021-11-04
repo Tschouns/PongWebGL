@@ -90,27 +90,24 @@ function drawRectangle() {
     gl.vertexAttribPointer(ctx.aVertexPositionId, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(ctx.aVertexPositionId);
 
-    console.log("uno");
-
     // temp:
-    var scale = mat3.fromScaling(mat3.create(), vec2.create(30, 30));
+    var scale = mat3.fromScaling(mat3.create(), vec2.fromValues(40, 100));
     var rotation = mat3.fromRotation(mat3.create(), -0.1);
-    var translation = mat3.fromTranslation(mat3.create(), vec2.create(20, 30))
+    var translation = mat3.fromTranslation(mat3.create(), vec2.fromValues(200, 300))
 
     var projectionMatrix = mat3.create();
 
-    projectionMatrix = mat3.multiply(projectionMatrix, rotation, projectionMatrix);
-    //projectionMatrix = mat3.multiply(projectionMatrix, rotation, projectionMatrix);
+    mat3.multiply(projectionMatrix, scale, projectionMatrix);
+    mat3.multiply(projectionMatrix, translation, projectionMatrix);
+    mat3.multiply(projectionMatrix, rotation, projectionMatrix);
 
     // Set shader parameters.
-    gl.uniform2f(ctx.uScreenResolutionId, 2, 2);
+    gl.uniform2f(ctx.uScreenResolutionId, 800, 600);
     gl.uniformMatrix3fv(ctx.uProjectionMatrixId, false, projectionMatrix);
 
     gl.uniform4f(ctx.uColorId, 1, 1, 1, 1);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-    console.log("due");
 }
 
 // Key Handling
