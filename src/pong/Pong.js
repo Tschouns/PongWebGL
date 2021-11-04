@@ -226,28 +226,79 @@ function solveBallCollisions() {
     var pos = pongWorld.ball.position;
     var v = pongWorld.ball.velocity;
 
-    // left bound:
+    // left world bound:
     if (pos[0] < r && v[0] < 0) {
         v[0] = 0 - v[0];
-        return;
     }
 
-    // right bound:
+    // right world bound:
     if (pos[0] > (pongWorld.size[0] - r) && v[0] > 0) {
         v[0] = 0 - v[0];
-        return;
     }
 
-    // upper bound:
+    // upper world bound:
     if (pos[1] > (pongWorld.size[1] - r) && v[1] > 0) {
         v[1] = 0 - v[1];
-        return;
     }
 
-    // lower bound:
+    // lower world bound:
     if (pos[1] < r && v[1] < 0) {
         v[1] = 0 - v[1];
-        return;
+    }
+
+    // paddles;
+    if (doModelsCollide(pongWorld.ball, pongWorld.paddleLeft) && v[0] < 0) {
+        v[0] = 0 - v[0];
+        randomRotateVector(v, 0.5);
+    }
+
+    if (doModelsCollide(pongWorld.ball, pongWorld.paddleRight) && v[0] > 0) {
+        v[0] = 0 - v[0];
+        randomRotateVector(v, 0.5);
+    }
+}
+
+/**
+ * Random rotates the specified vector 2 by a maximum of the specified max absolute radians.
+ * @param vector2 the vector to rotate
+ * @param maxAbsRad the maximum absolute radians by which to rotate
+ */
+function randomRotateVector(vector2, maxAbsRad) {
+    var rad = Math.random() % maxAbsRad;
+    var rotate =  mat2.fromRotation(mat2.create(), rad);
+    var rotatedV = mat2.multiply(mat2.create(), rotate, mat2.fromValues(vector2[0], vector2[1], 0, 0));
+
+    if (Math.abs(rotatedV[0] / rotatedV[1]) > 1.5) {
+        vector2[0] = rotatedV[0];
+        vector2[1] = rotatedV[1];
+    }
+}
+
+/**
+ * Determines whether two specified models, A and B, are currently colliding.
+ * @param a model A
+ * @param b model B
+ * @returns {boolean} a value which indicates whether they collide
+ */
+function doModelsCollide(a, b) {
+    var aLeftBound = a.position[0] - (a.size[0] / 2);
+    var aRightBound = a.position[0] + (a.size[0] / 2);
+    var aLowerBound = a.position[1] - (a.size[1] / 2);
+    var aUpperBound = a.position[1] + (a.size[1] / 2);
+
+    var bLeftBound = b.position[0] - (b.size[0] / 2);
+    var bRightBound = b.position[0] + (b.size[0] / 2);
+    var bLowerBound = b.position[1] - (b.size[1] / 2);
+    var bUpperBound = b.position[1] + (b.size[1] / 2);
+
+    if (aRightBound < bLeftBound ||
+        aLeftBound > bRightBound ||
+        aUpperBound < bLowerBound ||
+        aLowerBound > bUpperBound) {
+        return false;
+    }
+    else {
+        return true;
     }
 }
 
