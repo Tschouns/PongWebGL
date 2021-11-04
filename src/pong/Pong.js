@@ -41,6 +41,7 @@ var pongWorld = {
     // game state
     worldTime: -1,
     isFinished: false,
+    enemyAI: null,
 }
 
 /**
@@ -183,6 +184,10 @@ function updatePongWorld(timeStamp) {
         movePaddle(pongWorld.paddleLeft, 0 - pongWorld.paddleSpeed * timePassed);
     }
 
+    updateEnemyAI(timePassed);
+    movePaddle(pongWorld.paddleRight,pongWorld.enemyAI.movingDirection * pongWorld.paddleSpeed * timePassed)
+
+    /*
     if (isDown(key.RIGHT)) {
         movePaddle(pongWorld.paddleRight, pongWorld.paddleSpeed * timePassed);
     }
@@ -190,6 +195,7 @@ function updatePongWorld(timeStamp) {
     if (isDown(key.LEFT)) {
         movePaddle(pongWorld.paddleRight, 0 - pongWorld.paddleSpeed * timePassed);
     }
+    */
 
     // Move the ball.
     var ballPositionOffset = vec2.scale(vec2.create(), pongWorld.ball.velocity, timePassed);
@@ -208,6 +214,49 @@ function updatePongWorld(timeStamp) {
         pongWorld.isFinished = true;
         pongWorld.paddleRight.color = vec4.fromValues(0.9, 0.9, 0.1, 1);
     }
+}
+
+/**
+ * Updates the moving direction of the enemy AI.
+ * @param timePassed the time (in seconds) passed since the last update
+ */
+function updateEnemyAI(timePassed) {
+    pongWorld.enemyAI.coolDownTime -= timePassed;
+    if (pongWorld.enemyAI.coolDownTime > 0) {
+        // still cooling down...
+        return;
+    }
+
+    // By default, we do nothing.
+    pongWorld.enemyAI.movingDirection = 0;
+
+    var ball = pongWorld.ball;
+    var paddle = pongWorld.paddleRight;
+    var playerPaddle = pongWorld.paddleLeft;
+
+    // Is the ball approaching the enemy?
+    if (ball.velocity[0] > 0) {
+        // Follow the ball.
+        if (ball.position[1] > (paddle.position[1] + paddle.size[1] / 2)) {
+            pongWorld.enemyAI.movingDirection = 1;
+        }
+
+        if (ball.position[1] < (paddle.position[1] - paddle.size[1] / 2)) {
+            pongWorld.enemyAI.movingDirection = -1;
+        }
+    }
+    else {
+        // Follow the player.
+        if (playerPaddle.position[1] > paddle.position[1] + paddle.size[1]) {
+            pongWorld.enemyAI.movingDirection = 1;
+        }
+
+        if (playerPaddle.position[1] < paddle.position[1] - paddle.size[1]) {
+            pongWorld.enemyAI.movingDirection = -1;
+        }
+    }
+
+    pongWorld.enemyAI.coolDownTime = Math.random() * 1.1 + 0.2;
 }
 
 /**
@@ -269,7 +318,7 @@ function solveBallCollisions() {
  * @param maxAbsRad the maximum absolute radians by which to rotate
  */
 function randomRotateVector(vector2, maxAbsRad) {
-    var rad = Math.random() % maxAbsRad;
+    var rad = ((Math.random() - 0.5) * 4 * Math.PI) % maxAbsRad;
     var rotate =  mat2.fromRotation(mat2.create(), rad);
     var rotatedV = mat2.multiply(mat2.create(), rotate, mat2.fromValues(vector2[0], vector2[1], 0, 0));
 
@@ -368,12 +417,24 @@ function initializePongWorld() {
         vec4.fromValues(1, 0.5, 0.5, 1), // red
         vec2.fromValues(400, 300));
 
-    // Set an initial ball velocity, scale to "ball speed".
-    var ballVelocity = vec2.fromValues(-20, 12);
+    // Set a (more or less) random initial ball velocity, scale to "ball speed".
+    var ballVelocity = vec2.fromValues(
+        -1 + (Math.random() - 0.5),
+        Math.random() - 0.5);
+
     vec2.normalize(ballVelocity, ballVelocity);
     vec2.scale(ballVelocity, ballVelocity, pongWorld.ballSpeed);
 
     pongWorld.ball.velocity = ballVelocity;
+
+    // game state:
+    pongWorld.worldTime = -1;
+    pongWorld.isFinished = false;
+
+    pongWorld.enemyAI = {
+        coolDownTime: 0,
+        movingDirection: 0,
+    };
 }
 
 /**
