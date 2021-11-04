@@ -149,6 +149,7 @@ function drawPongWorld() {
     drawGameModel(pongWorld.middleLine);
     drawGameModel(pongWorld.paddleLeft);
     drawGameModel(pongWorld.paddleRight);
+    drawGameModel(pongWorld.ball);
 
     // Demo 1.
     var scale = mat3.fromScaling(mat3.create(), vec2.fromValues(40, 100));
@@ -204,6 +205,11 @@ function initializePongWorld() {
         vec2.fromValues(10, 100),
         vec4.fromValues(1, 1, 1, 1),
         vec2.fromValues(700, 300));
+
+    pongWorld.ball = createGameModel(
+        vec2.fromValues(20, 20),
+        vec4.fromValues(1, 0.5, 0.5, 1),
+        vec2.fromValues(400, 300));
 }
 
 /**
