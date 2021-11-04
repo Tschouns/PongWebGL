@@ -27,10 +27,19 @@ var rectangleObject = {
 
 // We keep the state of the "game world" in a single structure.
 var pongWorld = {
+    // fixed properties
+    size: vec2.fromValues(800, 600),
+    paddleSpeed: 70,
+    ballSpeed: 100,
+
+    // models
     middleLine: null,
     paddleLeft: null,
     paddleRight: null,
     ball: null,
+
+    // time
+    worldTime: -1,
 }
 
 /**
@@ -45,7 +54,7 @@ function startup() {
     window.addEventListener('keydown', onKeydown, false);
 
     initializePongWorld();
-    drawPongWorld();
+    window.requestAnimationFrame(drawAnimated);
 }
 
 /**
@@ -87,6 +96,22 @@ function setUpBuffers(){
 }
 
 /**
+ * Calculates a step in the game, and draws the animated frame.
+ * @param timeStamp
+ */
+function drawAnimated (timeStamp) {
+    "use strict";
+    console.log("Rendering animated frame...");
+
+    updatePongWorld(timeStamp);
+    drawPongWorld();
+
+    // Request the next frame.
+    window.requestAnimationFrame(drawAnimated);
+}
+
+
+/**
  * Draws the scene.
  * @param {mat3} prjectionMatrix a projection matrix which is applied to the rectangle
  * @param {vec4} colorRgb the RGB color the rectangle is drawn with
@@ -100,7 +125,7 @@ function drawRectangle(prjectionMatrix, colorRgb) {
     gl.enableVertexAttribArray(ctx.aVertexPositionId);
 
     // Set shader parameters.
-    gl.uniform2f(ctx.uScreenResolutionId, 800, 600);
+    gl.uniform2f(ctx.uScreenResolutionId, pongWorld.size[0], pongWorld.size[1]);
     gl.uniformMatrix3fv(ctx.uProjectionMatrixId, false, prjectionMatrix);
     gl.uniform4f(ctx.uColorId, colorRgb[0], colorRgb[1], colorRgb[2], colorRgb[3]);
 
@@ -132,7 +157,29 @@ function onKeyup(event) {
 /**
  * Updates the entire "Pong World".
  */
-function updatePongWorld() {
+function updatePongWorld(timeStamp) {
+    "use strict";
+
+    // Calculate time passed, handle timestamp.
+    if (pongWorld.worldTime < 0) {
+        pongWorld.worldTime = timeStamp;
+        return;
+    }
+
+    var timePassed = (timeStamp - pongWorld.worldTime) / 1000;
+    pongWorld.worldTime = timeStamp;
+
+    console.log("time passed: " + timePassed);
+
+    // Move stuff.
+    var ballPositionOffset = vec2.scale(vec2.create(), pongWorld.ball.velocity, timePassed);
+    vec2.add(pongWorld.ball.position, pongWorld.ball.position, ballPositionOffset);
+}
+
+/**
+ * Solves all the possible collisions of the ball with all other stuff.
+ */
+function solveBallCollisions() {
 
 }
 
@@ -150,32 +197,16 @@ function drawPongWorld() {
     drawGameModel(pongWorld.paddleLeft);
     drawGameModel(pongWorld.paddleRight);
     drawGameModel(pongWorld.ball);
-
-    // Demo 1.
-    var scale = mat3.fromScaling(mat3.create(), vec2.fromValues(40, 100));
-    var rotation = mat3.fromRotation(mat3.create(), -0.1);
-    var translation1 = mat3.fromTranslation(mat3.create(), vec2.fromValues(200, 300));
-    var translation2 = mat3.fromTranslation(mat3.create(), vec2.fromValues(600, 300));
-
-    var transform1 = mat3.create();
-    mat3.multiply(transform1, scale, transform1);
-    mat3.multiply(transform1, rotation, transform1);
-    mat3.multiply(transform1, translation1, transform1);
-
-    //drawRectangle(transform1, vec4.fromValues(1,1,1,1));
-
-    // Demo 2.
-    var transform2 = mat3.create();
-    mat3.multiply(transform2, scale, transform2);
-    mat3.multiply(transform2, rotation, transform2);
-    mat3.multiply(transform2, translation2, transform2);
-
-    //drawRectangle(transform2, vec4.fromValues(0,1,0,1));
 }
 
+/**
+ * Draws a sinlge drawable game model to the screen.
+ * @param model the model to draw
+ */
 function drawGameModel(model) {
     "use strict";
     console.log("Drawing model...");
+    console.log(model.position);
 
     var modelMatrix = mat3.copy(mat3.create(), model.modelMatrix);
 
@@ -198,18 +229,25 @@ function initializePongWorld() {
 
     pongWorld.paddleLeft = createGameModel(
         vec2.fromValues(10, 100),
-        vec4.fromValues(1, 1, 1, 1),
+        vec4.fromValues(0.4, 0.5, 0.7, 1), // blue
         vec2.fromValues(100, 300));
 
     pongWorld.paddleRight = createGameModel(
         vec2.fromValues(10, 100),
-        vec4.fromValues(1, 1, 1, 1),
+        vec4.fromValues(0.4, 0.5, 0.7, 1), // blue
         vec2.fromValues(700, 300));
 
     pongWorld.ball = createGameModel(
         vec2.fromValues(20, 20),
-        vec4.fromValues(1, 0.5, 0.5, 1),
+        vec4.fromValues(1, 0.5, 0.5, 1), // red
         vec2.fromValues(400, 300));
+
+    // Set an initial ball velocity, scale to "ball speed".
+    var ballVelocity = vec2.fromValues(20, 12);
+    vec2.normalize(ballVelocity, ballVelocity);
+    vec2.scale(ballVelocity, ballVelocity, pongWorld.ballSpeed);
+
+    pongWorld.ball.velocity = ballVelocity;
 }
 
 /**
@@ -230,18 +268,4 @@ function createGameModel(size, color, startingPosition) {
     }
 
     return model;
-}
-
-/**
- * Creates a model matrix for a specific game model. The model matrix describes the object in its shape, and does not
- * change during the game.
- * @param {vec2} the model size
- * @returns {mat3} the model matrix
- */
-function createGameModelMatrix(size) {
-    "use strict";
-
-    var scaleToSize = mat3.fromScaling(mat3.create(), size);
-
-    return scaleToSize;
 }
