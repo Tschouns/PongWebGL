@@ -9,7 +9,7 @@ void main() {
 
     // Convert to clip space coordinates.
     vec2 zeroToOneSpace = projectedPosition / uScreenResolution;
-    vec2 zeroToTwoSpace = zeroToOneSpace * 1.0;
+    vec2 zeroToTwoSpace = zeroToOneSpace * 2.0;
     vec2 clipSpace = zeroToTwoSpace - 1.0;
 
     // Set GL position.
